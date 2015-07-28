@@ -1,18 +1,29 @@
 
 //Ros Elements
-var ws, ros;
+var ros, 
+	cmdVel;
 
-//Ros Topics
-var cmdVel;
-var linX=0, linY=0, linZ=0, anX=0, anY=0, anZ=0;
+//Twist Elements
+var linX = 0, 
+	linY = 0, 
+	linZ = 0, 
+	anX = 0, 
+	anY = 0, 
+	anZ = 0,
+	linearSensitivity = 0.5,
+	angularSensitivity = 0.25;
 
 //Toggles
 var drivable = false;
 
-var IPAddress = "129.100.227.225";
+//Change IP to Husky current address
+var IPAddress = "129.100.227.225",
+	videoPort = "8080",
+	websocketPort = "9090";
 
 $(document).ready(function() {
 	window.gamepad = new Gamepad();
+
 	gamepad.bind(Gamepad.Event.CONNECTED, function(device) {
 		console.log('Connected', device);
 		$('#gamepadInfo').html(device.id);
@@ -25,12 +36,8 @@ $(document).ready(function() {
 	gamepad.bind(Gamepad.Event.BUTTON_UP, function(e) { buttonUp(e); });
 	gamepad.bind(Gamepad.Event.AXIS_CHANGED, function(e) { axisChanged(e); });
 	if (!gamepad.init()) {
-		alert('Your browser does not support gamepads, get the latest Google Chrome or Firefox.');
+		alert('Your browser does not support gamepads. Use the latest version of Google Chrome.');
 	}
-
-	ros = new ROSLIB.Ros({
-        url : 'ws://'+IPAddress+':9090'
-    });
     initRos();
 });
 
@@ -44,8 +51,8 @@ function buttonPressed(e) {
 };
 
 function buttonUp(e) {
-	console.log("Gamepad:" + e.gamepad.index + " Button: "+ e.control);
-	if(e.control == "FACE_3") {
+	//console.log("Gamepad:" + e.gamepad.index + " Button: "+ e.control);
+	if(e.control == "FACE_3") { //if A button is released
 		$('#driveIndicator').html("Drive Disabled");
 		drivable = false;
 		linX = 0;
@@ -54,24 +61,28 @@ function buttonUp(e) {
 };
 
 function axisChanged(e) {
-	console.log("Gamepad:"+ e.gamepad.index + " Axis:"+ e.axis+ " Value: "+e.value);
+	//console.log("Gamepad:"+ e.gamepad.index + " Axis:"+ e.axis+ " Value: "+e.value);
 	if(e.axis == "LEFT_STICK_Y" && drivable) {
- 		linX = -0.5*parseFloat(e.value); //left stick up and down
+ 		linX = -linearSensitivity*parseFloat(e.value); //left stick up and down
 	}
 	if(e.axis == "LEFT_STICK_X" && drivable) {
-		anZ = 0.25*parseFloat(e.value);
+		anZ = angularSensitivity*parseFloat(e.value); //left stick left and right
 	}
 };
 
 function setVideoQuality() {
 	var value = $('#videoQualityInput').val();
-	var string = "http://"+IPAddress+":8080/stream?topic=/camera/image_color&quality="+value;
-	$("#videoStream").attr("src",string);
+	var sourceString = "http://"+IPAddress+":"+videoPort+"/stream?topic=/camera/image_color&quality="+value;
+	$("#videoStream").attr("src", sourceString);
 };
 
 function initRos() {
+	ros = new ROSLIB.Ros({
+        url : 'ws://'+IPAddress+':'+websocketPort
+    });
+
 	ros.on('connection', function() {
-        console.log('Connected to websocket server.');
+        console.log('Connected to websocket server on: '+ IPAddress);
     });
 
     ros.on('error', function(error) {
@@ -79,7 +90,7 @@ function initRos() {
     });
 
     ros.on('close', function() {
-        console.log('Connection to websocket server closed.');
+        console.log('Connection to websocket server closed on: '+ IPAddress);
     });
 
     cmdVel = new ROSLIB.Topic({
@@ -91,6 +102,7 @@ function initRos() {
 
 function changeIP() {
 	IPAddress = $('#IPAddressInput').val();
+	initRos();
 };
 
 window.setInterval(function() {
@@ -112,5 +124,5 @@ window.setInterval(function() {
 	else {
 		console.log("Failed to publish twist. ROS may not be initialized.");
 	}
-}, 100);
+}, 100); //10Hz
 
