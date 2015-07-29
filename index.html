@@ -1,7 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <!--<meta name="viewport" content="initial-scale=1.0, user-scalable=no">-->
 	<meta charset="UTF-8">
+
 	<title>Husky Remote Connection</title>
 
 	<link rel="stylesheet" href="css/bootstrap.min.css">
@@ -11,7 +13,8 @@
 	<script type="text/javascript" src="js/eventemitter2.min.js"></script>
 	<script type="text/javascript" src="js/roslib.min.js"></script>
 	<script type="text/javascript" src="js/gamepad.min.js"></script>
-    <script type="text/javascript" src="js/script.js"></script>
+  <script src="https://maps.googleapis.com/maps/api/js?v=3.exp"></script>
+  <script type="text/javascript" src="js/script.js"></script>
 </head>
 <body>
 
@@ -58,13 +61,13 @@
           </div>
     		</div>
     		<div class="col-lg-4">
+          <div id="map-canvas"></div>
     			<div class="well">
             <h4>Status</h4>
-            
           </div>
     		</div>
   		</div>
-    		
 	</div>
+
 </body>
 </html>

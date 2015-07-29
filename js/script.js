@@ -1,4 +1,4 @@
-
+var map;
 //Ros Elements
 var ros, 
 	cmdVel;
@@ -63,7 +63,7 @@ $(document).ready(function() {
     $('input[type=radio][name=anSens]').change(function() {
         angularSensitivity = parseFloat($("input[name=anSens]:checked").val());
     });
-
+    initialize();
 });
 
 function buttonPressed(e) {
@@ -174,3 +174,20 @@ function drawAxisPosition() {
     ctx.fillStyle = 'green';
     ctx.fill();
 }
+
+function initialize() {
+  var myLatlng = new google.maps.LatLng(51.5,-0.12);
+  var mapOptions = {
+    zoom: 15,
+    center: myLatlng
+  }
+  var map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
+
+  var marker = new google.maps.Marker({
+      position: myLatlng,
+      map: map,
+      title: 'Hello World!'
+  });
+}
+
+google.maps.event.addDomListener(window, 'load', initialize);
