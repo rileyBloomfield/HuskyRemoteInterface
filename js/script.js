@@ -16,6 +16,10 @@ var linX = 0,
 //Toggles
 var drivable = false;
 
+//Canvas
+var canvas,
+	ctx;
+
 //Change IP to Husky current address
 var IPAddress = "129.100.227.225",
 	videoPort = "8080",
@@ -39,12 +43,25 @@ $(document).ready(function() {
 		alert('Your browser does not support gamepads. Use the latest version of Google Chrome.');
 	}
     initRos();
+    $('#IPIndicator').html(IPAddress);
+    $('#videoPortIndicator').html(videoPort);
+    $('#websocketPortIndicator').html(websocketPort);
+
+    //Prep Canvas
+    canvas = document.querySelector('canvas');
+    ctx = canvas.getContext('2d');
+    drawAxisPosition(); //Draw initial 0,0 position
+
+    //Set radio button defaults
+    $("#defaultLinSens").prop("checked", true);
+    $("#defaultAnSens").prop("checked", true);
 });
 
 function buttonPressed(e) {
 	console.log("Gamepad:" + e.gamepad.index + " Button: "+ e.control);
 	if(e.control == "FACE_3") {
 		$('#driveIndicator').html("Drive Enabled");
+		$('#driveIndicator').attr("class","enabled");
 		drivable = true;
 		return;
 	}
@@ -54,6 +71,7 @@ function buttonUp(e) {
 	//console.log("Gamepad:" + e.gamepad.index + " Button: "+ e.control);
 	if(e.control == "FACE_3") { //if A button is released
 		$('#driveIndicator').html("Drive Disabled");
+		$('#driveIndicator').attr("class","disabled");
 		drivable = false;
 		linX = 0;
 		anZ = 0;
@@ -61,12 +79,14 @@ function buttonUp(e) {
 };
 
 function axisChanged(e) {
-	//console.log("Gamepad:"+ e.gamepad.index + " Axis:"+ e.axis+ " Value: "+e.value);
+	console.log("Gamepad:"+ e.gamepad.index + " Axis:"+ e.axis+ " Value: "+e.value);
 	if(e.axis == "LEFT_STICK_Y" && drivable) {
  		linX = -linearSensitivity*parseFloat(e.value); //left stick up and down
+ 		drawAxisPosition();
 	}
 	if(e.axis == "LEFT_STICK_X" && drivable) {
 		anZ = angularSensitivity*parseFloat(e.value); //left stick left and right
+		drawAxisPosition();
 	}
 };
 
@@ -103,6 +123,7 @@ function initRos() {
 function changeIP() {
 	IPAddress = $('#IPAddressInput').val();
 	initRos();
+	$('#IPIndicator').html(IPAddress);
 };
 
 window.setInterval(function() {
@@ -126,3 +147,20 @@ window.setInterval(function() {
 	}
 }, 100); //10Hz
 
+function drawAxisPosition() {
+	ctx.clearRect(0, 0, canvas.width, canvas.height);
+	ctx.beginPath();
+	ctx.moveTo(50,0);
+	ctx.lineTo(50,100);
+	ctx.stroke();
+
+	ctx.beginPath();
+	ctx.moveTo(0,50);
+	ctx.lineTo(100,50);
+	ctx.stroke();
+
+	ctx.beginPath();
+    ctx.arc((anZ*canvas.width)+(canvas.width/2), (-linX*canvas.height)+(canvas.height/2), 10, 0, 2 * Math.PI, false);
+    ctx.fillStyle = 'green';
+    ctx.fill();
+}
