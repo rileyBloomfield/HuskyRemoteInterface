@@ -43,6 +43,8 @@ $(document).ready(function() {
 		alert('Your browser does not support gamepads. Use the latest version of Google Chrome.');
 	}
     initRos();
+
+    //Set status values
     $('#IPIndicator').html(IPAddress);
     $('#videoPortIndicator').html(videoPort);
     $('#websocketPortIndicator').html(websocketPort);
@@ -52,13 +54,20 @@ $(document).ready(function() {
     ctx = canvas.getContext('2d');
     drawAxisPosition(); //Draw initial 0,0 position
 
-    //Set radio button defaults
+    //Set radio button defaults and handlers
     $("#defaultLinSens").prop("checked", true);
     $("#defaultAnSens").prop("checked", true);
+    $('input[type=radio][name=linSens]').change(function() {
+        linearSensitivity = parseFloat($("input[name=linSens]:checked").val());
+    });
+    $('input[type=radio][name=anSens]').change(function() {
+        angularSensitivity = parseFloat($("input[name=anSens]:checked").val());
+    });
+
 });
 
 function buttonPressed(e) {
-	console.log("Gamepad:" + e.gamepad.index + " Button: "+ e.control);
+	//console.log("Gamepad:" + e.gamepad.index + " Button: "+ e.control);
 	if(e.control == "FACE_3") {
 		$('#driveIndicator').html("Drive Enabled");
 		$('#driveIndicator').attr("class","enabled");
@@ -75,11 +84,12 @@ function buttonUp(e) {
 		drivable = false;
 		linX = 0;
 		anZ = 0;
+		drawAxisPosition();
 	}
 };
 
 function axisChanged(e) {
-	console.log("Gamepad:"+ e.gamepad.index + " Axis:"+ e.axis+ " Value: "+e.value);
+	//console.log("Gamepad:"+ e.gamepad.index + " Axis:"+ e.axis+ " Value: "+e.value);
 	if(e.axis == "LEFT_STICK_Y" && drivable) {
  		linX = -linearSensitivity*parseFloat(e.value); //left stick up and down
  		drawAxisPosition();
