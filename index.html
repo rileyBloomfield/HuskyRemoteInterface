@@ -51,20 +51,19 @@
             <div>IP Address: <span id="IPIndicator"></span></div>
             <div>Video Port: <span id="videoPortIndicator"></span></div>
             <div>Web Socket Port: <span id="websocketPortIndicator"></span></div>
+            <br>
+            <div id="map-canvas"></div>
           </div>
     		</div>
-    		<div class="col-lg-4">
+    		<div class="col-lg-8">
     			<div class="well"><h4>Video</h4>
-            <img id="videoStream" src="http://129.100.227.225:8080/stream?topic=/camera/image_color&amp;quality=5" height="240px" width="320px">
+            <img id="videoStream" src="http://129.100.227.225:8080/stream?topic=/camera/image_color&amp;quality=5" height="480px" width="640px"><br>
             <input id="videoQualityInput" type="number" min="1" max="10"><button type="button" onclick="setVideoQuality();">Change Quality</button><br>
             (1-10)
           </div>
     		</div>
     		<div class="col-lg-4">
-          <div id="map-canvas"></div>
-    			<div class="well">
-            <h4>Status</h4>
-          </div>
+          <!-- Space to add additional elements in this format -->
     		</div>
   		</div>
 	</div>
