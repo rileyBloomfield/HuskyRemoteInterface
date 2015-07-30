@@ -155,7 +155,7 @@ function initRos() {
     });
     timeReference.subscribe(function(message) {
     	moveMarker();
-    	$('#positionLog').append("Latitude: "+latitude+" Longitude: "+ longitude+ " Time: "+time_ref);
+    	$('#positionLog').append("Latitude: "+latitude+" Longitude: "+ longitude+ " Time: "+time_ref + "\n");
     	$('#positionLog').scrollTop($('#positionLog')[0].scrollHeight);
     });
     counter.subscribe(function(message) {
