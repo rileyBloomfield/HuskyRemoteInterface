@@ -1,7 +1,13 @@
-var map;
+var map,
+	marker,
+	latitude = 43.00399198493171,
+	longitude = -81.27515846863389;
 //Ros Elements
 var ros, 
-	cmdVel;
+	cmdVel,
+	navSatFix,
+	timeReference,
+	counter;
 
 //Twist Elements
 var linX = 0, 
@@ -63,6 +69,8 @@ $(document).ready(function() {
     $('input[type=radio][name=anSens]').change(function() {
         angularSensitivity = parseFloat($("input[name=anSens]:checked").val());
     });
+
+    //initialize google map
     initialize();
 });
 
@@ -110,23 +118,48 @@ function initRos() {
 	ros = new ROSLIB.Ros({
         url : 'ws://'+IPAddress+':'+websocketPort
     });
-
 	ros.on('connection', function() {
         console.log('Connected to websocket server on: '+ IPAddress);
     });
-
     ros.on('error', function(error) {
         console.log('Error connecting to websocket server: ', error);
     });
-
     ros.on('close', function() {
         console.log('Connection to websocket server closed on: '+ IPAddress);
     });
-
     cmdVel = new ROSLIB.Topic({
         ros : ros,
         name : '/husky/cmd_vel',
         messageType : 'geometry_msgs/Twist'
+    });
+    navSatFix = new ROSLIB.Topic({
+    	ros : ros,
+    	name : '/gps/fix ',
+    	messageType : 'sensor_msgs/NavSatFix'
+    });
+    timeReference = new ROSLIB.Topic({
+    	ros : ros,
+    	name : '/gps/time_reference ',
+    	messageType : 'sensor_msgs/TimeReference'
+    });
+    counter = new ROSLIB.Topic({
+    	ros : ros,
+    	name : '/husky/counter',
+    	messageType : 'geometry_msgs/Point'
+    });
+
+    //Subscriptions
+    navSatFix.subscribe(function(message) {
+    	latitude = message.latitude;
+    	longitude = message.longitude;
+    });
+    timeReference.subscribe(function(message) {
+    	moveMarker();
+    	$('#positionLog').append("Latitude: "+latitude+" Longitude: "+ longitude+ " Time: "+time_ref);
+    	$('#positionLog').scrollTop($('#positionLog')[0].scrollHeight);
+    });
+    counter.subscribe(function(message) {
+    	//Action when counter is received    	
     });
 };
 
@@ -155,7 +188,7 @@ window.setInterval(function() {
 	else {
 		console.log("Failed to publish twist. ROS may not be initialized.");
 	}
-}, 100); //10Hz
+}, 50); //20Hz
 
 function drawAxisPosition() {
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -176,18 +209,43 @@ function drawAxisPosition() {
 }
 
 function initialize() {
-  var myLatlng = new google.maps.LatLng(51.5,-0.12);
+  var myLatlng = new google.maps.LatLng(latitude,longitude);
   var mapOptions = {
-    zoom: 15,
+    zoom: 18,
     center: myLatlng
   }
-  var map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
+  map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
 
-  var marker = new google.maps.Marker({
+  marker = new google.maps.Marker({
       position: myLatlng,
       map: map,
       title: 'Location'
   });
+}
+
+function moveMarker() {
+    marker.setPosition( new google.maps.LatLng( latitude, longitude ) );
+    map.panTo( new google.maps.LatLng( latitude, longitude ) );
+}
+
+function clearLog() {
+	var r = confirm("Clear Position Logs?");
+	if (r == true)
+    	$('#positionLog').html('');
+}
+
+function saveLog() {
+	var content = $('#positionLog').val();
+    var contentType = 'application/octet-stream';
+    var filename = "positionLog";
+    var fileExtension = ".txt";
+
+    if(!contentType) contentType = 'application/octet-stream';
+    var a = document.createElement('a');
+    var blob = new Blob([content], {'type':contentType});
+    a.href = window.URL.createObjectURL(blob);
+    a.download = filename+fileExtension;
+    a.click();
 }
 
 google.maps.event.addDomListener(window, 'load', initialize);
