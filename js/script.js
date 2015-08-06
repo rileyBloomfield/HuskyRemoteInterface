@@ -1,10 +1,14 @@
+/*
+* Riley Bloomfield, 2015
+*/
+
 var map,
-	marker,
 	latitude = 43.00399198493171,
 	longitude = -81.27515846863389;
+
 //Ros Elements
 var ros, 
-	cmdVel,
+	delayedCmdVel,
 	navSatFix,
 	timeReference,
 	counter;
@@ -27,9 +31,12 @@ var canvas,
 	ctx;
 
 //Change IP to Husky current address
-var IPAddress = "129.100.227.225",
+var IPAddress = "172.31.248.8",
 	videoPort = "8080",
 	websocketPort = "9090";
+ 
+//Forced Delay
+var delay = 0;
 
 $(document).ready(function() {
 	window.gamepad = new Gamepad();
@@ -48,7 +55,10 @@ $(document).ready(function() {
 	if (!gamepad.init()) {
 		alert('Your browser does not support gamepads. Use the latest version of Google Chrome.');
 	}
+
+	initVideoStream();
     initRos();
+    initMap();
 
     //Set status values
     $('#IPIndicator').html(IPAddress);
@@ -69,9 +79,6 @@ $(document).ready(function() {
     $('input[type=radio][name=anSens]').change(function() {
         angularSensitivity = parseFloat($("input[name=anSens]:checked").val());
     });
-
-    //initialize google map
-    initialize();
 });
 
 function buttonPressed(e) {
@@ -108,57 +115,90 @@ function axisChanged(e) {
 	}
 };
 
-function setVideoQuality() {
-	var value = $('#videoQualityInput').val();
-	var sourceString = "http://"+IPAddress+":"+videoPort+"/stream?topic=/camera/image_color&quality="+value;
-	$("#videoStream").attr("src", sourceString);
+function initVideoStream() {
+
+	var $videoStream = $("#videoStream"),
+		uri,
+		delayedQueue = new DelayedQueue(delay, function(item) {
+			$videoStream.attr('src', 
+	        	'data:image/jpeg;base64,'+btoa(String.fromCharCode.apply(null, new Uint8Array(item)))
+        	);
+		});
+
+		onload = function() {
+	        delayedQueue.push(this.response);
+	    }
+
+	window.setVideoQuality = function() {
+		var box = $('#videoQualityInput');
+			quality = Math.clamp(1, box.val(), 20);
+		box.val(quality);
+
+		uri = 'http://'+IPAddress+':'+videoPort+'/snapshot?topic=/camera/image_color&quality='+quality;
+	}
+
+	setVideoQuality();
+
+	setInterval(function() { 
+		var xmlHTTP = new XMLHttpRequest();
+		xmlHTTP.open('GET', uri, true);
+		xmlHTTP.responseType = 'arraybuffer';
+		xmlHTTP.onload = onload;
+   		xmlHTTP.send(); 
+	}, 60); //no more than 66, muse be at least 15Hz
 };
 
 function initRos() {
 	ros = new ROSLIB.Ros({
         url : 'ws://'+IPAddress+':'+websocketPort
     });
+
 	ros.on('connection', function() {
         console.log('Connected to websocket server on: '+ IPAddress);
     });
+
     ros.on('error', function(error) {
         console.log('Error connecting to websocket server: ', error);
     });
+
     ros.on('close', function() {
         console.log('Connection to websocket server closed on: '+ IPAddress);
     });
-    cmdVel = new ROSLIB.Topic({
+
+    delayedCmdVel = new DelayedRosTopic(new ROSLIB.Topic({
         ros : ros,
         name : '/husky/cmd_vel',
         messageType : 'geometry_msgs/Twist'
-    });
-    navSatFix = new ROSLIB.Topic({
+    }), delay);
+    delayedNavSatFix = new DelayedRosTopic(new ROSLIB.Topic({
     	ros : ros,
     	name : '/gps/fix ',
     	messageType : 'sensor_msgs/NavSatFix'
-    });
-    timeReference = new ROSLIB.Topic({
+    }), delay);
+    delayedTimeReference = new DelayedRosTopic(new ROSLIB.Topic({
     	ros : ros,
     	name : '/gps/time_reference ',
     	messageType : 'sensor_msgs/TimeReference'
-    });
-    counter = new ROSLIB.Topic({
+    }), delay);
+    delayedCounter = new DelayedRosTopic(new ROSLIB.Topic({
     	ros : ros,
     	name : '/husky/counter',
     	messageType : 'geometry_msgs/Point'
-    });
+    }), delay);
 
     //Subscriptions
-    navSatFix.subscribe(function(message) {
+    delayedNavSatFix.subscribe(function(message) {
     	latitude = message.latitude;
     	longitude = message.longitude;
     });
-    timeReference.subscribe(function(message) {
+
+    delayedTimeReference.subscribe(function(message) {
     	moveMarker();
-    	$('#positionLog').append("Latitude: "+latitude+" Longitude: "+ longitude+ " Time: "+time_ref + "\n");
+    	$('#positionLog').append("Latitude: "+latitude+" Longitude: "+ longitude+ " Time: "+message.time_ref + "\n");
     	$('#positionLog').scrollTop($('#positionLog')[0].scrollHeight);
     });
-    counter.subscribe(function(message) {
+
+    delayedCounter.subscribe(function(message) {
     	//Action when counter is received    	
     });
 };
@@ -168,6 +208,12 @@ function changeIP() {
 	initRos();
 	$('#IPIndicator').html(IPAddress);
 };
+
+function changeDelay() {
+	delay = $('#delayInput').val();
+	$('#delayIndicator').html(delay);
+	delay = delay*1000;
+}
 
 window.setInterval(function() {
 	if(ros) {
@@ -183,12 +229,12 @@ window.setInterval(function() {
  				z : -anZ //left stick left and right
 			}
 		});
-		cmdVel.publish(twist);
+		delayedCmdVel.publish(twist);
 	}
 	else {
 		console.log("Failed to publish twist. ROS may not be initialized.");
 	}
-}, 50); //20Hz
+}, 100); //10Hz
 
 function drawAxisPosition() {
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -208,25 +254,27 @@ function drawAxisPosition() {
     ctx.fill();
 }
 
-function initialize() {
+function initMap() {
   var myLatlng = new google.maps.LatLng(latitude,longitude);
   var mapOptions = {
     zoom: 18,
     center: myLatlng
   }
-  map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
+  var map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
 
-  marker = new google.maps.Marker({
+  var marker = new google.maps.Marker({
       position: myLatlng,
       map: map,
       title: 'Location'
   });
-}
 
-function moveMarker() {
+  window.moveMarker = function() {
     marker.setPosition( new google.maps.LatLng( latitude, longitude ) );
     map.panTo( new google.maps.LatLng( latitude, longitude ) );
+	}
 }
+
+google.maps.event.addDomListener(window, 'load', initMap);
 
 function clearLog() {
 	var r = confirm("Clear Position Logs?");
@@ -247,5 +295,3 @@ function saveLog() {
     a.download = filename+fileExtension;
     a.click();
 }
-
-google.maps.event.addDomListener(window, 'load', initialize);

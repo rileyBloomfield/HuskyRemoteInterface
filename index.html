@@ -14,6 +14,7 @@
 	<script type="text/javascript" src="js/roslib.min.js"></script>
 	<script type="text/javascript" src="js/gamepad.min.js"></script>
   <script src="https://maps.googleapis.com/maps/api/js?v=3.exp"></script>
+  <script type="text/javascript" src="js/delayedTopic.js"></script>
   <script type="text/javascript" src="js/script.js"></script>
 </head>
 <body>
@@ -24,6 +25,7 @@
       			<ul class="nav navbar-nav">
         			<li><p class="navbar-text">IP Address: <span id="currentIPAddress"</span></p></li>
               <li><p class="navbar-text"><input id="IPAddressInput" type="text"></input><button type="button" onclick="changeIP();">Change IP</button></p></li>
+              <li><p class="navbar-text">Delay(s): <input id="delayInput" type="number" min="0" max="60"></input><button type="button" onclick="changeDelay();">Change Delay</button></p></li>
         			<li><p class="navbar-text">Gamepad: <span id="gamepadInfo"</span></p></li>
         		</ul>
     		</div>
@@ -51,6 +53,7 @@
             <div>IP Address: <span id="IPIndicator"></span></div>
             <div>Video Port: <span id="videoPortIndicator"></span></div>
             <div>Web Socket Port: <span id="websocketPortIndicator"></span></div>
+            <div>Simulated Delay: <span id="delayIndicator">0</span>s</div>
             <br>
             <div id="map-canvas"></div>
           </div>
@@ -58,8 +61,8 @@
     		<div class="col-lg-8">
     			<div class="well"><h4>Video</h4>
             <img id="videoStream" src="http://129.100.227.225:8080/stream?topic=/camera/image_color&amp;quality=5" height="480px" width="640px"><br>
-            <input id="videoQualityInput" type="number" min="1" max="10"><button type="button" onclick="setVideoQuality();">Change Quality</button><br>
-            (1-10)
+            <input id="videoQualityInput" type="number" min="1" max="10" value="5"><button type="button" onclick="setVideoQuality();">Change Quality</button><br>
+            (1-10)<br><br>
           </div>
     		</div>
     		<div class="col-lg-4">
