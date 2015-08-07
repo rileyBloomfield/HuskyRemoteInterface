@@ -13,6 +13,7 @@ function DelayedQueue(delayModel, onPop) {
 	this._queue = [];
 	this.onPop = onPop || function() { };
 }
+
 DelayedQueue.prototype = {
 	push: function(item) {
 		this._queue.push(this._constructEntry(item));

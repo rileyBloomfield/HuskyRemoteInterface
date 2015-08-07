@@ -172,13 +172,13 @@ function initRos(model) {
 
     delayedNavSatFix = new DelayedRosTopic(new ROSLIB.Topic({
     	ros : ros,
-    	name : '/gps/fix ',
+    	name : '/gps/fix',
     	messageType : 'sensor_msgs/NavSatFix'
     }), model);
 
     delayedTimeReference = new DelayedRosTopic(new ROSLIB.Topic({
     	ros : ros,
-    	name : '/gps/time_reference ',
+    	name : '/gps/time_reference',
     	messageType : 'sensor_msgs/TimeReference'
     }), model);
 
@@ -196,7 +196,7 @@ function initRos(model) {
 
     delayedTimeReference.subscribe(function(message) {
     	moveMarker();
-    	$('#positionLog').append("Latitude: "+latitude+" Longitude: "+ longitude+ " Time: "+message.time_ref + "\n");
+    	$('#positionLog').append(latitude+","+ longitude+ ","+message.time_ref.secs+"\n");
     	$('#positionLog').scrollTop($('#positionLog')[0].scrollHeight);
     });
 
@@ -288,7 +288,7 @@ function saveLog() {
 	var content = $('#positionLog').val();
     var contentType = 'application/octet-stream';
     var filename = "positionLog";
-    var fileExtension = ".txt";
+    var fileExtension = ".csv";
 
     if(!contentType) contentType = 'application/octet-stream';
     var a = document.createElement('a');
