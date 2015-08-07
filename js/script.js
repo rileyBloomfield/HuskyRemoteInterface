@@ -36,7 +36,7 @@ var IPAddress = "172.31.248.8",
 	websocketPort = "9090";
  
 //Forced Delay
-var delay = 0;
+var globalModel = { delay: 0 };
 
 $(document).ready(function() {
 	window.gamepad = new Gamepad();
@@ -56,8 +56,8 @@ $(document).ready(function() {
 		alert('Your browser does not support gamepads. Use the latest version of Google Chrome.');
 	}
 
-	initVideoStream();
-    initRos();
+	initVideoStream(globalModel);
+    initRos(globalModel);
     initMap();
 
     //Set status values
@@ -115,19 +115,18 @@ function axisChanged(e) {
 	}
 };
 
-function initVideoStream() {
-
+function initVideoStream(model) {
 	var $videoStream = $("#videoStream"),
 		uri,
-		delayedQueue = new DelayedQueue(delay, function(item) {
+		delayedQueue = new DelayedQueue(model, function(item) {
 			$videoStream.attr('src', 
 	        	'data:image/jpeg;base64,'+btoa(String.fromCharCode.apply(null, new Uint8Array(item)))
         	);
 		});
 
-		onload = function() {
-	        delayedQueue.push(this.response);
-	    }
+	onload = function() {
+        delayedQueue.push(this.response);
+    };
 
 	window.setVideoQuality = function() {
 		var box = $('#videoQualityInput');
@@ -135,7 +134,7 @@ function initVideoStream() {
 		box.val(quality);
 
 		uri = 'http://'+IPAddress+':'+videoPort+'/snapshot?topic=/camera/image_color&quality='+quality;
-	}
+	};
 
 	setVideoQuality();
 
@@ -145,10 +144,10 @@ function initVideoStream() {
 		xmlHTTP.responseType = 'arraybuffer';
 		xmlHTTP.onload = onload;
    		xmlHTTP.send(); 
-	}, 60); //no more than 66, muse be at least 15Hz
+	}, 60); //no more than 66, muse be at least 15Hz to keep up with camera FPS
 };
 
-function initRos() {
+function initRos(model) {
 	ros = new ROSLIB.Ros({
         url : 'ws://'+IPAddress+':'+websocketPort
     });
@@ -169,22 +168,25 @@ function initRos() {
         ros : ros,
         name : '/husky/cmd_vel',
         messageType : 'geometry_msgs/Twist'
-    }), delay);
+    }), model);
+
     delayedNavSatFix = new DelayedRosTopic(new ROSLIB.Topic({
     	ros : ros,
     	name : '/gps/fix ',
     	messageType : 'sensor_msgs/NavSatFix'
-    }), delay);
+    }), model);
+
     delayedTimeReference = new DelayedRosTopic(new ROSLIB.Topic({
     	ros : ros,
     	name : '/gps/time_reference ',
     	messageType : 'sensor_msgs/TimeReference'
-    }), delay);
+    }), model);
+
     delayedCounter = new DelayedRosTopic(new ROSLIB.Topic({
     	ros : ros,
     	name : '/husky/counter',
     	messageType : 'geometry_msgs/Point'
-    }), delay);
+    }), model);
 
     //Subscriptions
     delayedNavSatFix.subscribe(function(message) {
@@ -199,7 +201,7 @@ function initRos() {
     });
 
     delayedCounter.subscribe(function(message) {
-    	//Action when counter is received    	
+    	
     });
 };
 
@@ -210,9 +212,9 @@ function changeIP() {
 };
 
 function changeDelay() {
-	delay = $('#delayInput').val();
-	$('#delayIndicator').html(delay);
-	delay = delay*1000;
+	globalModel.delay = $('#delayInput').val();
+	$('#delayIndicator').html(globalModel.delay);
+	globalModel.delay *= 1000;
 }
 
 window.setInterval(function() {
