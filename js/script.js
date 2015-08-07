@@ -3,8 +3,7 @@
 */
 
 var map,
-	latitude = 43.00399198493171,
-	longitude = -81.27515846863389;
+	position = {latitude: 0, longitude: 0, time: 0};
 
 //Ros Elements
 var ros, 
@@ -36,7 +35,10 @@ var IPAddress = "172.31.248.8",
 	websocketPort = "9090";
  
 //Forced Delay
-var globalModel = { delay: 0 };
+var globalModel = { 
+	delay: 0,
+	positionLog: []
+};
 
 $(document).ready(function() {
 	window.gamepad = new Gamepad();
@@ -190,19 +192,20 @@ function initRos(model) {
 
     //Subscriptions
     delayedNavSatFix.subscribe(function(message) {
-    	latitude = message.latitude;
-    	longitude = message.longitude;
+    	position.latitude = message.latitude;
+    	position.longitude = message.longitude;
     });
 
     delayedTimeReference.subscribe(function(message) {
     	moveMarker();
-    	$('#positionLog').append(latitude+","+ longitude+ ","+message.time_ref.secs+"\n");
-    	$('#positionLog').scrollTop($('#positionLog')[0].scrollHeight);
-    });
-
-    delayedCounter.subscribe(function(message) {
-    	
-    });
+    	position.time = message.time_ref.secs;
+    	var $logBody = $('#logTableBody');
+    	with(position) {
+    		$logBody.append('<tr><td>'+latitude+'</td><td>'+longitude+'</td><td>'+time+'</td><tr>');
+	    	model.positionLog.push([latitude, longitude, time]);
+			$('#scrollDiv').scrollTop($('#scrollDiv')[0].scrollHeight);
+    	}
+    }, 1000);
 };
 
 function changeIP() {
@@ -257,7 +260,7 @@ function drawAxisPosition() {
 }
 
 function initMap() {
-  var myLatlng = new google.maps.LatLng(latitude,longitude);
+  var myLatlng = new google.maps.LatLng(position.latitude,position.longitude);
   var mapOptions = {
     zoom: 18,
     center: myLatlng
@@ -271,8 +274,8 @@ function initMap() {
   });
 
   window.moveMarker = function() {
-    marker.setPosition( new google.maps.LatLng( latitude, longitude ) );
-    map.panTo( new google.maps.LatLng( latitude, longitude ) );
+    marker.setPosition( new google.maps.LatLng(position.latitude,position.longitude ) );
+    map.panTo( new google.maps.LatLng(position.latitude,position.longitude ) );
 	}
 }
 
@@ -280,14 +283,16 @@ google.maps.event.addDomListener(window, 'load', initMap);
 
 function clearLog() {
 	var r = confirm("Clear Position Logs?");
-	if (r == true)
-    	$('#positionLog').html('');
+	if (r == true) {
+		globalModel.positionLog = [];
+		$('#logTableBody').html('');
+	}
 }
 
 function saveLog() {
-	var content = $('#positionLog').val();
+	var content = globalModel.positionLog.map(function(item) { return item.join(); }).join('\n');
     var contentType = 'application/octet-stream';
-    var filename = "positionLog";
+    var filename = 'positionLog';
     var fileExtension = ".csv";
 
     if(!contentType) contentType = 'application/octet-stream';

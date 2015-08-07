@@ -69,7 +69,16 @@
           <!-- Space to add additional elements in this format -->
           <button type="button" onclick="clearLog();">Clear</button>
           <button type="button" onclick="saveLog();">Save</button>
-          <textarea id="positionLog" rows="4" cols="100" readonly></textarea>
+          <div id="scrollDiv" style="max-height: 25vh; width: 50vw; overflow-y: auto">
+            <table class="table">
+              <thead><tr>
+                <td>Latitude</td><td>Longitude</td><td>Time</td>
+              </tr></thead>
+              <tbody id="logTableBody">
+              </tbody>
+            </table>
+          </div>
+          <br><br>
     		</div>
   		</div>
 	</div>
