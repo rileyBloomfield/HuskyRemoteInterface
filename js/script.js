@@ -222,7 +222,7 @@ function initRos(model) {
 	    	model.positionLog.push([latitude, longitude, time]);
 			$('#scrollDiv').scrollTop($('#scrollDiv')[0].scrollHeight);
     	}
-    }, 1000);
+    });
 
     setInterval(function() {
 		if(ros) {
@@ -234,18 +234,6 @@ function initRos(model) {
 	}, 100); //10Hz
 };
 
-function changeIP() {
-	network.IPAddress = $('#IPAddressInput').val();
-	initRos();
-	$('#IPIndicator').html(network.IPAddress);
-};
-
-function changeDelay() {
-	globalModel.delay = $('#delayInput').val();
-	$('#delayIndicator').html(globalModel.delay);
-	globalModel.delay *= 1000;
-}
-
 function initMap(position) {
   var myLatlng = new google.maps.LatLng(position.latitude, position.longitude);
   var mapOptions = {
@@ -256,12 +244,24 @@ function initMap(position) {
   var marker = new google.maps.Marker({
       position: myLatlng,
       map: map,
-      title: 'Location'
+      title: 'Husky Location'
   });
   window.moveMarker = function() {
   		marker.setPosition( new google.maps.LatLng(position.latitude, position.longitude ) );
     	map.panTo( new google.maps.LatLng(position.latitude, position.longitude ) );
 	}
+}
+
+function changeIP() {
+	network.IPAddress = $('#IPAddressInput').val();
+	initRos();
+	$('#IPIndicator').html(network.IPAddress);
+};
+
+function changeDelay() {
+	globalModel.delay = $('#delayInput').val();
+	$('#delayIndicator').html(globalModel.delay);
+	globalModel.delay *= 1000;
 }
 
 function clearLog() {
